@@ -1,7 +1,7 @@
 #import "ConnectSdk.h"
 
 @implementation ConnectSdk
-RCT_EXPORT_MODULE()
+RCT_EXPORT_MODULE(ConnectSDK)
 
 // Example method
 // See // https://reactnative.dev/docs/native-modules-ios
