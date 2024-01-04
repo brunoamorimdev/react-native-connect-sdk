@@ -13,7 +13,7 @@ const ConnectSdkModule = isTurboModuleEnabled
   ? require('./NativeConnectSdk').default
   : NativeModules.ConnectSdk;
 
-const ConnectSdk = ConnectSdkModule
+export const ConnectSdk = ConnectSdkModule
   ? ConnectSdkModule
   : new Proxy(
       {},
@@ -23,7 +23,3 @@ const ConnectSdk = ConnectSdkModule
         },
       }
     );
-
-export function multiply(a: number, b: number): Promise<number> {
-  return ConnectSdk.multiply(a, b);
-}
