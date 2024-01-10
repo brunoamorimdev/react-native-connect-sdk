@@ -1,4 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
+import type { Spec } from './NativeConnectSdk';
 
 const LINKING_ERROR =
   `The package 'react-native-connect-sdk' doesn't seem to be linked. Make sure: \n\n` +
@@ -13,7 +14,7 @@ const ConnectSdkModule = isTurboModuleEnabled
   ? require('./NativeConnectSdk').default
   : NativeModules.ConnectSdk;
 
-export const ConnectSdk = ConnectSdkModule
+export const ConnectSdk: Spec = ConnectSdkModule
   ? ConnectSdkModule
   : new Proxy(
       {},

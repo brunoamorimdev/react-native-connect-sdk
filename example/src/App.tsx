@@ -1,19 +1,21 @@
 import * as React from 'react';
 
-import { StyleSheet, View } from 'react-native';
+import { Button, StyleSheet, View } from 'react-native';
 import { ConnectSdk } from 'react-native-connect-sdk';
 
-async function ok() {
-  await ConnectSdk.startDiscovery();
-  await ConnectSdk.openConnectableDevicesPicker();
-}
-
 export default function App() {
-  React.useEffect(() => {
-    ok();
-  }, []);
+  React.useEffect(() => {}, []);
 
-  return <View style={styles.container} />;
+  return (
+    <View style={styles.container}>
+      <Button title="Start Discovery" onPress={ConnectSdk.startDiscovery} />
+      <Button title="Stop Discovery" onPress={ConnectSdk.stopDiscovery} />
+      <Button
+        title="Open Connectable Devices Picker"
+        onPress={ConnectSdk.openConnectableDevicesPicker}
+      />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
