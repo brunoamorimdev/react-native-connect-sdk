@@ -1,7 +1,9 @@
 #import "ConnectSdk.h"
 #import "ConnectSDK/ConnectSDK.h"
-#import "React/RCTViewManager.h"
 #import "CoreLocation/CoreLocation.h"
+#import "ConnectSDKDispatcher.h"
+#import "ConnectSDKObjects.h"
+#import <React/RCTViewManager.h>
 
 @interface JSDeviceState : NSObject
 
@@ -34,6 +36,8 @@
 @interface ConnectSdk () <DevicePickerDelegate, DiscoveryManagerDelegate, ConnectableDeviceDelegate>
 @property DiscoveryManager *discoveryManager;
 @property ConnectableDevice *connectableDevice;
+@property NSMapTable* deviceStateById; // map device id to device
+@property NSMapTable* deviceStateByDevice; // map device to device id
 @end
 
 @implementation ConnectSdk
@@ -42,7 +46,17 @@ RCT_EXPORT_MODULE(ConnectSDK)
 
 @synthesize discoveryManager = _discoveryManager;
 @synthesize connectableDevice = _connectableDevice;
+@synthesize deviceStateById = _deviceStateById;
+@synthesize deviceStateByDevice = _deviceStateByDevice;
 
+// Don't compile this code when we build for the old architecture.
+#ifdef RCT_NEW_ARCH_ENABLED
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params
+{
+    return std::make_shared<facebook::react::NativeConnectSdkSpecJSI>(params);
+}
+#endif
 
 - (void)startDiscovery:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject {
     _discoveryManager.delegate = self;
@@ -61,8 +75,27 @@ RCT_EXPORT_MODULE(ConnectSDK)
 }
 
 
-- (void) setupDiscovery:(NSDictionary *)config :(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+- (void)openConnectableDevicesPicker:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject 
 {
+    @try {
+        DevicePicker *picker = [_discoveryManager devicePicker];
+        picker.delegate = self;
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            UIViewController *view = [[[RCTSharedApplication() delegate] window] rootViewController];
+            
+            [picker showPicker:view];
+        });
+        
+        resolve(@0);
+    } @catch (NSException *exception) {
+        reject(@"[Connectable Devices Picker]",[NSString stringWithFormat:@"[Exception %@] - [%@]", [exception name], [exception reason]], nil);
+    }
+    
+}
+
+- (void)setupDiscovery:(NSDictionary *)config resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject { 
+    
     if (!_discoveryManager) {
             _discoveryManager = [DiscoveryManager sharedManager];
         }
@@ -91,44 +124,14 @@ RCT_EXPORT_MODULE(ConnectSDK)
                 [_discoveryManager setCapabilityFilters:capFilters];
             }
         }
-}
-
-
-- (void)openConnectableDevicesPicker:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject 
-{
-    @try {
-        DevicePicker *picker = [_discoveryManager devicePicker];
-        picker.delegate = self;
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            UIViewController *view = [[[RCTSharedApplication() delegate] window] rootViewController];
-            
-            [picker showPicker:view];
-        });
-        
-        resolve(@0);
-    } @catch (NSException *exception) {
-        reject(@"[Connectable Devices Picker]",[NSString stringWithFormat:@"[Exception %@] - [%@]", [exception name], [exception reason]], nil);
-    }
     
 }
 
-// Don't compile this code when we build for the old architecture.
-#ifdef RCT_NEW_ARCH_ENABLED
-- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
-    (const facebook::react::ObjCTurboModule::InitParams &)params
-{
-    return std::make_shared<facebook::react::NativeConnectSdkSpecJSI>(params);
-}
-#endif
+
+
 
 - (void) devicePicker:(DevicePicker *)picker didSelectDevice:(ConnectableDevice *)device;
 {
-        if (self.automaticPairingTypeNumber) {
-            [self setPairingTypeNumber:self.automaticPairingTypeNumber
-                              toDevice:device];
-        }
-        
         device.delegate = self;
         [device connect];
         NSDictionary* dict = [self deviceAsDict:device];
@@ -139,12 +142,28 @@ RCT_EXPORT_MODULE(ConnectSDK)
         NSString* errorString = [error localizedDescription];
 }
 
+- (void) sendDeviceUpdate:(NSString*)event device:(ConnectableDevice*)device withData:(NSDictionary*)dict
+{
+    JSDeviceState* deviceState = [self getOrCreateDeviceState:device];
+    
+    if (!device || ![deviceState success]) {
+        return;
+    }
+    
+    NSArray* array = dict ? @[event, dict] : @[event];
+    @try {
+        [self sendEventWithName:@"deviceupdated" body:array];
+    } @catch (NSException *ex) {
+        NSLog(@"exception while sendDeviceUpdate %@", ex);
+    }
+}
+
 - (void)connectableDeviceDisconnected:(ConnectableDevice *)device withError:(NSError *)error { 
-    <#code#>
+    [self sendDeviceUpdate:@"disconnect" device:device withData:nil];
 }
 
 - (void)connectableDeviceReady:(ConnectableDevice *)device { 
-    <#code#>
+    [self sendDeviceUpdate:@"ready" device:device withData:nil];
 }
 
 - (JSDeviceState*) getOrCreateDeviceState:(ConnectableDevice*)device
@@ -158,6 +177,11 @@ RCT_EXPORT_MODULE(ConnectSDK)
         }
         return deviceState;
     }
+}
+
+static id orNull (id obj)
+{
+    return obj ? obj : [NSNull null];
 }
 
 - (NSDictionary*) deviceAsDict:(ConnectableDevice*)device

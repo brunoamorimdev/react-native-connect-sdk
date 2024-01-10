@@ -17,12 +17,12 @@
 //  limitations under the License.
 //
 
-#import "ConnectSDKModule.h"
+#import "ConnectSdk.h"
 #import "ConnectSDKDispatcher.h"
 #import <ConnectSDK/ConnectSDK.h>
 
 @interface JSObjectWrapper : NSObject
-@property (nonatomic, strong) ConnectSDKModule* module;
+@property (nonatomic, strong) ConnectSdk* module;
 @property (nonatomic, strong) NSString* objectId;
 @property (nonatomic, strong) NSString* callbackId;
 
@@ -36,7 +36,7 @@
 
 @interface WebAppSessionWrapper : JSObjectWrapper<WebAppSessionDelegate>
 @property (nonatomic, strong) WebAppSession* session;
-- (instancetype) initWithModule:(ConnectSDKModule*)module session:(WebAppSession*)session;
+- (instancetype) initWithModule:(ConnectSdk*)module session:(WebAppSession*)session;
 - (void) webAppSession:(WebAppSession *)webAppSession didReceiveMessage:(id)message;
 - (void) webAppSessionDidDisconnect:(WebAppSession *)webAppSession;
 @end
@@ -44,14 +44,14 @@
 @interface MediaControlWrapper : JSObjectWrapper
 @property (nonatomic, strong) id<MediaControl> mediaControl;
 
-- (instancetype) initWithModule:(ConnectSDKModule*)module mediaControl:(id<MediaControl>)mediaControl;
+- (instancetype) initWithModule:(ConnectSdk*)module mediaControl:(id<MediaControl>)mediaControl;
 @end
 
 @interface PlaylistControlWrapper : JSObjectWrapper
 
 @property (nonatomic, strong) id<PlayListControl> playlistControl;
 
-- (instancetype)initWithModule:(ConnectSDKModule*)module playlistControl:(id<PlayListControl>)playlistControl;
+- (instancetype)initWithModule:(ConnectSdk*)module playlistControl:(id<PlayListControl>)playlistControl;
 
 @end
 
@@ -59,6 +59,6 @@
 
 @property (nonatomic, strong) id<PowerControl> powerControl;
 
-- (instancetype)initWithModule:(ConnectSDKModule*)module powerControl:(id<PowerControl>)powerControl;
+- (instancetype)initWithModule:(ConnectSdk*)module powerControl:(id<PowerControl>)powerControl;
 
 @end

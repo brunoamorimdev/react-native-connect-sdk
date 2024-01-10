@@ -23,7 +23,7 @@
 
 static int nextObjectId = 0;
 
-- (instancetype) initWithModule:(ConnectSDKModule*)module
+- (instancetype) initWithModule:(ConnectSdk*)module
 {
     self = [super init];
     
@@ -39,10 +39,7 @@ static int nextObjectId = 0;
 // send [eventName, data]
 - (void) sendEvent:(NSString*)event withObject:obj
 {
-    if (self.callbackId) {
-        NSArray* payload = obj ? @[event, obj] : @[event];
-        [self.module sendModuleResult:payload callbackId:_callbackId deviceId:nil];
-    }
+    
 }
 
 - (void) cleanup
@@ -53,7 +50,7 @@ static int nextObjectId = 0;
 
 @implementation WebAppSessionWrapper
 
-- (instancetype) initWithModule:(ConnectSDKModule*)module session:(WebAppSession*)session
+- (instancetype) initWithModule:(ConnectSdk*)module session:(WebAppSession*)session
 {
     self = [super initWithModule:module];
     
@@ -73,7 +70,7 @@ static int nextObjectId = 0;
 - (void) webAppSessionDidDisconnect:(WebAppSession *)webAppSession
 {
     [self sendEvent:@"disconnect" withObject:nil];
-    [self.module removeSupportedEvent:self.callbackId];
+//    [self.module removeSupportedEvent:self.callbackId];
     self.callbackId = nil;
 }
 
@@ -90,7 +87,7 @@ static int nextObjectId = 0;
 
 @implementation MediaControlWrapper
 
-- (instancetype) initWithModule:(ConnectSDKModule*)module mediaControl:(id<MediaControl>)mediaControl
+- (instancetype) initWithModule:(ConnectSdk*)module mediaControl:(id<MediaControl>)mediaControl
 {
     self = [super initWithModule:module];
     
@@ -105,7 +102,7 @@ static int nextObjectId = 0;
 
 @implementation PlaylistControlWrapper
 
-- (instancetype)initWithModule:(ConnectSDKModule *)module
+- (instancetype)initWithModule:(ConnectSdk *)module
                playlistControl:(id <PlayListControl>)playlistControl {
     self = [super initWithModule:module];
     _playlistControl = playlistControl;
