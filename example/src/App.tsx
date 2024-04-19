@@ -1,18 +1,22 @@
 import * as React from 'react';
 
 import { StyleSheet, View, Text } from 'react-native';
-import { multiply } from 'react-native-connect-sdk';
+import { nativeEvent } from 'react-native-connect-sdk';
 
 export default function App() {
-  const [result, setResult] = React.useState<number | undefined>();
-
   React.useEffect(() => {
-    multiply(3, 7).then(setResult);
+    const subscription = nativeEvent.addListener('didFindDevice', (event) => {
+      console.log('didFindDevice Event Emmiter', event);
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   return (
     <View style={styles.container}>
-      <Text>Result: {result}</Text>
+      <Text />
     </View>
   );
 }
