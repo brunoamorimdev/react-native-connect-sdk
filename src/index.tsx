@@ -1,4 +1,4 @@
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules, Platform, NativeEventEmitter } from 'react-native';
 
 const LINKING_ERROR =
   `The package 'react-native-connect-sdk' doesn't seem to be linked. Make sure: \n\n` +
@@ -10,8 +10,8 @@ const LINKING_ERROR =
 const isTurboModuleEnabled = global.__turboModuleProxy != null;
 
 const ConnectSdkModule = isTurboModuleEnabled
-  ? require('./NativeConnectSdk').default
-  : NativeModules.ConnectSdk;
+  ? require('./NativeConnectionManager').default
+  : NativeModules.ConnectionManager;
 
 const ConnectSdk = ConnectSdkModule
   ? ConnectSdkModule
@@ -24,6 +24,10 @@ const ConnectSdk = ConnectSdkModule
       }
     );
 
-export function multiply(a: number, b: number): Promise<number> {
-  return ConnectSdk.multiply(a, b);
+export const nativeEvent = new NativeEventEmitter(ConnectSdk);
+
+export function startDiscovery(): Promise<void> {
+  return ConnectSdk.startDiscovery();
 }
+
+startDiscovery();
