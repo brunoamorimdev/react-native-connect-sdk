@@ -1,6 +1,10 @@
-# react-native-connect-sdk
+# React Native ConnectSDK
 
-A React Native lib that provides remote control over devices.
+A React Native library that helps developers implement devices connection and control features.
+
+# Help Wanted
+
+🚀 Looking for contributors! If you're interested in contributing to this project, feel free to [open an issue](https://github.com/brunoamorimdev/react-native-connect-sdk/issues) or [submit a pull request](https://github.com/brunoamorimdev/react-native-connect-sdk/pulls). Any help is appreciated! 🙌
 
 ## Installation
 
@@ -8,14 +12,20 @@ A React Native lib that provides remote control over devices.
 npm install react-native-connect-sdk
 ```
 
+or
+
+```sh
+yarn add react-native-connect-sdk
+```
+
 ## Usage
 
 ```js
-import { multiply } from 'react-native-connect-sdk';
+import { startDiscovery } from 'react-native-connect-sdk';
 
 // ...
 
-const result = await multiply(3, 7);
+await startDiscovery();
 ```
 
 ## Contributing
