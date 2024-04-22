@@ -32,7 +32,7 @@ export interface ConnectSDK extends NativeEventEmitter {
   getAllDevices(): Promise<ConnectableDevice[]>;
   removeListeners(): void;
   addListener(
-    eventType: ConnectsEvents,
+    eventType: string,
     listener?: (event: any) => void,
     context?: Object
   ): EmitterSubscription;
