@@ -8,7 +8,14 @@
 #import "ConnectionManager.h"
 #import <CoreLocation/CoreLocation.h>
 #import <ConnectSDK/ConnectSDK.h>
-#import "JSDevice.h"
+
+
+NSDictionary* buildJSDevice(ConnectableDevice *device){
+    return @{
+      @"friendlyName": device.friendlyName,
+      @"ipAddress": device.address
+    };
+}
 
 @interface ConnectionManager () <CLLocationManagerDelegate,
 DiscoveryManagerDelegate, ConnectableDeviceDelegate>
@@ -45,10 +52,6 @@ RCT_EXPORT_MODULE()
     return YES;
 }
 
-- (dispatch_queue_t)methodQueue
-{
-  return dispatch_get_main_queue();
-}
 
 
 #pragma mark - RCTEventEmmiter
@@ -104,15 +107,23 @@ RCT_EXPORT_METHOD(startDiscovery:(RCTPromiseResolveBlock)resolve reject:(RCTProm
 
 RCT_EXPORT_METHOD(stopDiscovery:(RCTPromiseResolveBlock)resolve 
                   reject:(RCTPromiseRejectBlock)reject){
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.discoveryManager stopDiscovery];
-        [self.locationManager stopUpdatingLocation];
-    });
+    [self.discoveryManager stopDiscovery];
+    [self.locationManager stopUpdatingLocation];
 }
 
 RCT_EXPORT_METHOD(getAllDevices:(RCTPromiseResolveBlock)resolve 
                   reject:(RCTPromiseRejectBlock)reject){
-    resolve(self.allDevices);
+    // Create a mutable array to store the JS representation of devices.
+    NSMutableArray *devicesJSRepresentation = [NSMutableArray array];
+    
+    // Iterate over all devices and build their JS representation.
+    for (ConnectableDevice *device in [[self.discoveryManager allDevices] allValues]) {
+        NSDictionary *jsDevice = buildJSDevice(device);
+        [devicesJSRepresentation addObject:jsDevice];
+    }
+    
+    // Resolve the promise with the JS representation of all devices.
+    resolve(devicesJSRepresentation);
 }
 
 
@@ -123,18 +134,19 @@ RCT_EXPORT_METHOD(getAllDevices:(RCTPromiseResolveBlock)resolve
 }
 
 - (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
-    if (status == kCLAuthorizationStatusAuthorizedWhenInUse || status == kCLAuthorizationStatusAuthorizedAlways) {
-        dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (status == kCLAuthorizationStatusAuthorizedWhenInUse || status == kCLAuthorizationStatusAuthorizedAlways) {
             if (!self.discoveryManager){
                 self.discoveryManager = [DiscoveryManager sharedManager];
             }
             self.discoveryManager.delegate = self;
             [self.discoveryManager startDiscovery];
-        });
-    } else {
-        // Handle not authorized status
-        NSLog(@"Location Authorization Denied");
-    }
+        } else {
+            // Handle not authorized status
+            NSLog(@"Location Authorization Denied");
+        }
+    });
+   
 }
 
 #pragma mark - DiscoveryManagerDelegate
@@ -142,16 +154,14 @@ RCT_EXPORT_METHOD(getAllDevices:(RCTPromiseResolveBlock)resolve
 
 - (void)discoveryManager:(DiscoveryManager *)manager 
            didFindDevice:(ConnectableDevice *)device {
-    NSLog(@"Found device: %@", device.friendlyName);
-    [self.allDevices addObject:device];
-    if (hasListeners){
-        // Without adding manually
-        // it returns a warning that the event is emmited but no listener
-        [self addListener:@"didFindDevice"];
-        NSDictionary *jsDevice = [[JSDevice alloc] buildWith:device];
-        [self sendEventWithName:@"didFindDevice" body:jsDevice];
-    }
-    
+    dispatch_async(dispatch_get_main_queue(), ^{
+           NSLog(@"Found device: %@", device.friendlyName);
+           [self.allDevices addObject:device];
+           if (self->hasListeners) {
+               [self addListener:@"didFindDevice"]; // Potentially adjust `addListener` usage if necessary
+               [self sendEventWithName:@"didFindDevice" body:buildJSDevice(device)];
+           }
+       });
 }
 
 - (void)discoveryManager:(DiscoveryManager *)manager 
@@ -162,8 +172,7 @@ RCT_EXPORT_METHOD(getAllDevices:(RCTPromiseResolveBlock)resolve
         // Without adding manually
         // it returns a warning that the event is emmited but no listener
         [self addListener:@"didLoseDevice"];
-        NSDictionary *jsDevice = [[JSDevice alloc] buildWith:device];
-        [self sendEventWithName:@"didLoseDevice" body:jsDevice];
+        [self sendEventWithName:@"didLoseDevice" body:buildJSDevice(device)];
     }
 }
 
@@ -200,8 +209,7 @@ RCT_EXPORT_METHOD(getAllDevices:(RCTPromiseResolveBlock)resolve
         // Without adding manually
         // it returns a warning that the event is emmited but no listener
         [self addListener:@"didUpdateDevice"];
-        NSDictionary *jsDevice = [[JSDevice alloc] buildWith:device];
-        [self sendEventWithName:@"didUpdateDevice" body:jsDevice];
+        [self sendEventWithName:@"didUpdateDevice" body:buildJSDevice(device)];
     }
 }
 
